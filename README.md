@@ -1,1 +1,8 @@
-# atelier1-creation-client
+# Chifoumi
+
+
+Membres du groupe:
+ADIGBONON Rodica
+BARATIN Andrew
+COLOGNI Enzo
+PHIMMASANE Laëtitia
