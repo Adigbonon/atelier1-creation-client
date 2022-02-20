@@ -1,54 +1,103 @@
+const net = require('net');
 const readline = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 })
-const net = require('net');
+let tab= [];
+class Player {
 
+    constructor(){
+        this.pseudo = undefined;
+        this.choice = undefined;
+    }
+    
+    init() {}
 
-const start = async () =>{
+    getPseudo() {
+        return this.pseudo;
+    }
+    changePseudo(pseudo) {
+        this.pseudo = pseudo;
+    }
 
-    /**await client.on('data', function (data){
-        console.log(data.toString('utf-8'));
-    })
+    getChoice() {
+        return this.choice;
+    }
+    changeChoice(choice) {
+        this.choice = choice;
+    }
 
-    await client.on('error', function(err) {
-        console.log(err);
-    }).then( ()=> {
-        readline.setPrompt("Pierre(0) /Papier(1) /Ciseaux (2) /Quitter (q/Q) : ");
-    readline.prompt()})**/
+    answerUser() {
+        return new Promise((resolve, reject) => {
+            readline.question('', (input) => resolve(input) );
+    });
 
-    client.on('data', function (data){
-        console.log(data.toString('utf-8'));
-    })
+    }
 
-    client.on('error', function(err) {
-        console.log(err);
-    }).then(()=>{
-       readline.setPrompt("Pierre(0) /Papier(1) /Ciseaux (2) /Quitter (q/Q) : ");
-       readline.prompt()
-        for  (const content of readline){
-        if (content == 'q' || content == 'Q') {
-            process.exit(0)
-        } else {
-            try {
-                console.log("La connexion a été fait.")
-                client.write(content)
+    async request(verb, url, content){
+        let client = net.createConnection({ host:'127.0.0.1', port:5000 }, () =>{
+            client.write(`${verb} /${encodeURI(url)} HTTP/1.1\r\n`)
+            client.write('Content-Type: text/plain\r\n')
+            client.write(`Content-Length: ${content.length}\r\n\r\n`)
+            client.write(`${content}\r\n`)
+        })    
+        client.setTimeout(30000)
+        client.setEncoding('utf8')    
+        client.on('data', function (data) {
+            console.log(data)
+            tab.push(data);
+        })    
+        await new Promise(resolve => {
+            client.on('close', resolve)
+        })
+    };
 
-                //envoyer le numéro du joueur
-                //attendre la réponse
-                //afficher le score
-            } catch (e) {
-                console.error(e)
-            }
-            readline.prompt()
-        }
-    }} )
-       .catch()
+}
+const start = async( ) => { 
+    try{
+        let player = new Player();
+
+        console.log('Bienvenue au jeu pierre, papier, ciseaux, pour jouer rien de plus simple',
+        '\nil vous suffit de saisir : Pierre(0) | Papier(1) | Ciseaux(2) | Quitter (e)',
+        '\nCe jeu joue entre 2 personnes \n');
+        console.log('Veuillez saisir le nom de votre pseudo : ');
+        player.answerUser()
+            .then(responseUser => { 
+                player.changePseudo(responseUser);
+                console.log('Saisissez votre choix parmis : Pierre(0) | Papier(1) | Ciseaux(2) | Quitter (e)');
+                return player.answerUser();
+            })
+            .then(responseUser => {
+                return player.changeChoice(responseUser);
+            })
+            .then(() => { 
+                return player.request('POST',player.getPseudo(), player.getChoice());
+            })
+            .then(()=> { 
+               return player.request('GET','','');
+            })
+            // Axe d'amélioration
+            // .then(()=>{
+            //     let tab1 = tab[tab.length-1].split(' ');
+            //     console.log('tab1', tab1);
+            //     let tab2 = tab1[tab.length-1].split(' ').join();
+            //     console.log('tab2', tab2);
+            //     let tab3 = tab1[tab.length-1].split(' ').join();
+            //     console.log('tab3', tab3);
+            //     let tab4 = [tab2, tab3];
+            //     let tab5 = tab4[0].split(/\t1?\n1/);
+            //     let tab6 = tab4[1].split(/\t1?\n1/);
+
+            //    console.log('tab5',tab5);
+            //    console.log('tab6', tab6);
+            // })
+            .catch(e => { 
+                console.error(e);
+            })
+    }
+    catch(e){
+        console.error(e);
+    }
 }
 
-
-let client = net.createConnection({ host:'127.0.0.1', port:5000 }, () =>{
-    //récup num joueur
-    start()
-})
-
+start();
